@@ -1,1 +1,80 @@
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT, -- ID number
+    username VARCHAR(20) UNIQUE NOT NULL,
+    email_id VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(20) NOT NULL, -- Store hashed passwords, not plain text
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE groups (
+    group_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    creator_user_id INTEGER, -- Optional: User who created the group
+    FOREIGN KEY (creator_user_id) REFERENCES users(user_id)
+);
+CREATE TABLE user_groups (
+    user_group_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    role VARCHAR(20) DEFAULT 'member', -- e.g., 'admin', 'member'
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (group_id) REFERENCES groups(group_id),
+    UNIQUE (user_id, group_id)
+);
+CREATE TABLE memories (
+    memory_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Primary key
+    user_id INTEGER NOT NULL,-- User ID (foreign key)
+    longitude REAL, -- Longitude
+    latitude REAL, -- Latitude
+    location_name TEXT, -- Location name
+    memory_date DATE, -- Memory date
+    image_url TEXT, -- Image URL
+    description TEXT, -- Description
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- time memory was created
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- time memory was updated
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+ );
+CREATE TABLE tags (
+    tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag_name VARCHAR(50) UNIQUE NOT NULL
+);
+ CREATE TABLE memory_tags (
+    memory_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    memory_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    FOREIGN KEY (memory_id) REFERENCES memories(memory_id),
+    FOREIGN KEY (tag_id) REFERENCES tags(tag_id),
+    UNIQUE (memory_id, tag_id)
+);
+CREATE TABLE board_data (
+    board_data_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    memory_id INTEGER NOT NULL,
+    key_name VARCHAR(50) NOT NULL,
+    value TEXT,
+    FOREIGN KEY (group_id) REFERENCES groups(group_id),
+    FOREIGN KEY (memory_id) REFERENCES memories(memory_id),
+    UNIQUE (group_id, memory_id, key_name) -- Ensure unique custom data per memory per group
+);    
 
+-- Indexes for faster querying
+CREATE INDEX ind_memories_location ON memories (latitude, longitude);
+CREATE INDEX ind_memories_date ON memories (memory_date);
+CREATE INDEX ind_memories_user ON memories (user_id);
+CREATE INDEX ind_memories_group ON memories (group_id);
+CREATE INDEX ind_user_groups_user ON user_groups (user_id);
+CREATE INDEX ind_user_groups_group ON user_groups (group_id);
+CREATE INDEX ind_memory_tags_memory ON memory_tags (memory_id);
+CREATE INDEX ind_memory_tags_tag ON memory_tags (tag_id);
+CREATE INDEX ind_board_data_group_memory ON board_data (group_id, memory_id);
+CREATE INDEX ind_board_data_key ON board_data (key_name);
+
+-- SELECT m.*
+-- FROM memories_fts f
+-- JOIN memories m ON f.rowid = m.memory_id
+-- WHERE f.memories_fts MATCH 'keyword1 keyword2';
